@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useSelector } from 'react-redux'
 import {
   Box, Paper, Typography, Button, Table, TableBody,
   TableCell, TableContainer, TableHead, TableRow,
@@ -11,7 +12,7 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import EditIcon from '@mui/icons-material/Edit'
 import PeopleIcon from '@mui/icons-material/People'
 import Layout from '../components/common/Layout'
-import { getUsersAPI, createUserAPI, updateUserAPI, deleteUserAPI } from '../features/auth/userAPI'
+import { getUsersAPI, getManagersAPI, createUserAPI, updateUserAPI, deleteUserAPI } from '../features/auth/userAPI'
 
 const roleColors = {
   admin: 'error',
@@ -31,7 +32,11 @@ const getInitials = (name) => {
 }
 
 const Users = () => {
+  const { user } = useSelector((state) => state.auth)
+  const isAdmin = user?.role === 'admin'
+
   const [users, setUsers] = useState([])
+  const [managers, setManagers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [openCreate, setOpenCreate] = useState(false)
@@ -42,6 +47,7 @@ const Users = () => {
     email: '',
     password: '',
     role: 'viewer',
+    managerId: '',
   })
 
   const fetchUsers = async () => {
@@ -56,15 +62,25 @@ const Users = () => {
     }
   }
 
+  const fetchManagers = async () => {
+    try {
+      const data = await getManagersAPI()
+      setManagers(data.managers)
+    } catch (err) {
+      console.error('Failed to fetch managers')
+    }
+  }
+
   useEffect(() => {
     fetchUsers()
+    if (isAdmin) fetchManagers()
   }, [])
 
   const handleCreate = async () => {
     try {
       await createUserAPI(form)
       setOpenCreate(false)
-      setForm({ name: '', email: '', password: '', role: 'viewer' })
+      setForm({ name: '', email: '', password: '', role: 'viewer', managerId: '' })
       fetchUsers()
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create user')
@@ -73,7 +89,11 @@ const Users = () => {
 
   const handleEdit = async () => {
     try {
-      await updateUserAPI(selectedUser._id, { role: form.role, isActive: true })
+      await updateUserAPI(selectedUser._id, {
+        role: form.role,
+        isActive: true,
+        managerId: form.managerId || null,
+      })
       setOpenEdit(false)
       fetchUsers()
     } catch (err) {
@@ -91,9 +111,9 @@ const Users = () => {
     }
   }
 
-  const openEditDialog = (user) => {
-    setSelectedUser(user)
-    setForm({ ...form, role: user.role })
+  const openEditDialog = (u) => {
+    setSelectedUser(u)
+    setForm({ ...form, role: u.role, managerId: u.managerId?._id || '' })
     setOpenEdit(true)
   }
 
@@ -105,22 +125,26 @@ const Users = () => {
           <Box>
             <Typography variant="h5" fontWeight={800} color="#0f172a">User Management</Typography>
             <Typography variant="body2" color="text.secondary" mt={0.5}>
-              {users.length} member{users.length !== 1 ? 's' : ''} in your workspace
+              {isAdmin
+                ? `${users.length} member${users.length !== 1 ? 's' : ''} in your workspace`
+                : 'Showing users under your management'}
             </Typography>
           </Box>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setOpenCreate(true)}
-            sx={{
-              borderRadius: 2, fontWeight: 600, px: 3,
-              background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-              boxShadow: '0 4px 12px rgba(26,26,46,0.25)',
-              '&:hover': { background: 'linear-gradient(135deg, #16213e, #0d2b52)' },
-            }}
-          >
-            Add User
-          </Button>
+          {isAdmin && (
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={() => setOpenCreate(true)}
+              sx={{
+                borderRadius: 2, fontWeight: 600, px: 3,
+                background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
+                boxShadow: '0 4px 12px rgba(26,26,46,0.25)',
+                '&:hover': { background: 'linear-gradient(135deg, #16213e, #0d2b52)' },
+              }}
+            >
+              Add User
+            </Button>
+          )}
         </Box>
 
         {error && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setError(null)}>{error}</Alert>}
@@ -135,7 +159,7 @@ const Users = () => {
               <Table>
                 <TableHead>
                   <TableRow sx={{ background: 'linear-gradient(135deg, #1a1a2e, #0f3460)' }}>
-                    {['Name', 'Email', 'Role', 'Status', 'Created', 'Actions'].map((h) => (
+                    {['Name', 'Email', 'Role', 'Manager', 'Status', 'Created', ...(isAdmin ? ['Actions'] : [])].map((h) => (
                       <TableCell key={h} sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700, borderBottom: 'none', py: 1.5 }}>
                         {h}
                       </TableCell>
@@ -145,28 +169,30 @@ const Users = () => {
                 <TableBody>
                   {users.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
+                      <TableCell colSpan={isAdmin ? 7 : 6} align="center" sx={{ py: 8 }}>
                         <PeopleIcon sx={{ fontSize: 48, color: '#cbd5e1', mb: 1.5 }} />
                         <Typography variant="h6" color="text.secondary" fontWeight={600}>
                           No users found
                         </Typography>
                         <Typography variant="body2" color="text.disabled" mb={2}>
-                          Add your first user to the workspace
+                          {isAdmin ? 'Add your first user to the workspace' : 'No users under your management!'}
                         </Typography>
-                        <Button
-                          variant="outlined"
-                          startIcon={<AddIcon />}
-                          onClick={() => setOpenCreate(true)}
-                          sx={{ borderRadius: 2 }}
-                        >
-                          Add User
-                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="outlined"
+                            startIcon={<AddIcon />}
+                            onClick={() => setOpenCreate(true)}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Add User
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   ) : (
-                    users.map((user, idx) => (
+                    users.map((u, idx) => (
                       <TableRow
-                        key={user._id}
+                        key={u._id}
                         hover
                         sx={{
                           bgcolor: idx % 2 === 0 ? 'white' : '#fafafa',
@@ -178,31 +204,44 @@ const Users = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <Avatar sx={{
                               width: 36, height: 36, fontSize: '13px', fontWeight: 700,
-                              bgcolor: roleAvatarColors[user.role] || '#555',
+                              bgcolor: roleAvatarColors[u.role] || '#555',
                               borderRadius: '10px',
                             }}>
-                              {getInitials(user.name)}
+                              {getInitials(u.name)}
                             </Avatar>
                             <Typography fontWeight={600} color="#0f172a" fontSize={14}>
-                              {user.name}
+                              {u.name}
                             </Typography>
                           </Box>
                         </TableCell>
                         <TableCell>
-                          <Typography variant="body2" color="text.secondary">{user.email}</Typography>
+                          <Typography variant="body2" color="text.secondary">{u.email}</Typography>
                         </TableCell>
                         <TableCell>
                           <Chip
-                            label={user.role.toUpperCase()}
-                            color={roleColors[user.role]}
+                            label={u.role.toUpperCase()}
+                            color={roleColors[u.role]}
                             size="small"
                             sx={{ borderRadius: 1, fontWeight: 700, fontSize: '11px' }}
                           />
                         </TableCell>
                         <TableCell>
+                          {u.managerId ? (
+                            <Chip
+                              label={u.managerId.name}
+                              size="small"
+                              variant="outlined"
+                              color="primary"
+                              sx={{ borderRadius: 1, fontSize: '11px' }}
+                            />
+                          ) : (
+                            <Typography variant="body2" color="text.disabled">—</Typography>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <Chip
-                            label={user.isActive ? 'Active' : 'Inactive'}
-                            color={user.isActive ? 'success' : 'default'}
+                            label={u.isActive ? 'Active' : 'Inactive'}
+                            color={u.isActive ? 'success' : 'default'}
                             size="small"
                             variant="outlined"
                             sx={{ borderRadius: 1, fontWeight: 600 }}
@@ -210,31 +249,33 @@ const Users = () => {
                         </TableCell>
                         <TableCell>
                           <Typography variant="body2" color="text.secondary">
-                            {new Date(user.createdAt).toLocaleDateString()}
+                            {new Date(u.createdAt).toLocaleDateString()}
                           </Typography>
                         </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5 }}>
-                            <Tooltip title="Edit Role">
-                              <IconButton
-                                size="small"
-                                onClick={() => openEditDialog(user)}
-                                sx={{ bgcolor: '#eff6ff', color: '#1976d2', borderRadius: 1.5, '&:hover': { bgcolor: '#dbeafe' } }}
-                              >
-                                <EditIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Delete User">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDelete(user._id)}
-                                sx={{ bgcolor: '#fff5f5', color: '#d32f2f', borderRadius: 1.5, '&:hover': { bgcolor: '#fee2e2' } }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </Box>
-                        </TableCell>
+                        {isAdmin && (
+                          <TableCell>
+                            <Box sx={{ display: 'flex', gap: 0.5 }}>
+                              <Tooltip title="Edit Role">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => openEditDialog(u)}
+                                  sx={{ bgcolor: '#eff6ff', color: '#1976d2', borderRadius: 1.5, '&:hover': { bgcolor: '#dbeafe' } }}
+                                >
+                                  <EditIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="Delete User">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDelete(u._id)}
+                                  sx={{ bgcolor: '#fff5f5', color: '#d32f2f', borderRadius: 1.5, '&:hover': { bgcolor: '#fee2e2' } }}
+                                >
+                                  <DeleteIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))
                   )}
@@ -272,21 +313,36 @@ const Users = () => {
               <Select
                 value={form.role}
                 label="Role"
-                onChange={(e) => setForm({ ...form, role: e.target.value })}
+                onChange={(e) => setForm({ ...form, role: e.target.value, managerId: '' })}
                 sx={{ borderRadius: 2 }}
               >
                 <MenuItem value="manager">Manager</MenuItem>
                 <MenuItem value="viewer">Viewer</MenuItem>
               </Select>
             </FormControl>
+            {form.role === 'viewer' && (
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Assign Manager</InputLabel>
+                <Select
+                  value={form.managerId}
+                  label="Assign Manager"
+                  onChange={(e) => setForm({ ...form, managerId: e.target.value })}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value="">No Manager</MenuItem>
+                  {managers.map((m) => (
+                    <MenuItem key={m._id} value={m._id}>
+                      {m.name} ({m.email})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </DialogContent>
           <DialogActions sx={{ p: 3, pt: 1 }}>
             <Button onClick={() => setOpenCreate(false)} sx={{ borderRadius: 2 }}>Cancel</Button>
             <Button variant="contained" onClick={handleCreate}
-              sx={{
-                borderRadius: 2, fontWeight: 600,
-                background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-              }}>
+              sx={{ borderRadius: 2, fontWeight: 600, background: 'linear-gradient(135deg, #1a1a2e, #0f3460)' }}>
               Create
             </Button>
           </DialogActions>
@@ -295,7 +351,7 @@ const Users = () => {
         {/* Edit User Dialog */}
         <Dialog open={openEdit} onClose={() => setOpenEdit(false)} maxWidth="sm" fullWidth
           PaperProps={{ sx: { borderRadius: 3 } }}>
-          <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Edit User Role</DialogTitle>
+          <DialogTitle sx={{ fontWeight: 700, pb: 1 }}>Edit User</DialogTitle>
           <DialogContent>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, p: 2, bgcolor: '#f8fafc', borderRadius: 2 }}>
               <Avatar sx={{
@@ -323,14 +379,29 @@ const Users = () => {
                 <MenuItem value="viewer">Viewer</MenuItem>
               </Select>
             </FormControl>
+            {form.role === 'viewer' && (
+              <FormControl fullWidth margin="normal">
+                <InputLabel>Assign Manager</InputLabel>
+                <Select
+                  value={form.managerId}
+                  label="Assign Manager"
+                  onChange={(e) => setForm({ ...form, managerId: e.target.value })}
+                  sx={{ borderRadius: 2 }}
+                >
+                  <MenuItem value="">No Manager</MenuItem>
+                  {managers.map((m) => (
+                    <MenuItem key={m._id} value={m._id}>
+                      {m.name} ({m.email})
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
           </DialogContent>
           <DialogActions sx={{ p: 3, pt: 1 }}>
             <Button onClick={() => setOpenEdit(false)} sx={{ borderRadius: 2 }}>Cancel</Button>
             <Button variant="contained" onClick={handleEdit}
-              sx={{
-                borderRadius: 2, fontWeight: 600,
-                background: 'linear-gradient(135deg, #1a1a2e, #0f3460)',
-              }}>
+              sx={{ borderRadius: 2, fontWeight: 600, background: 'linear-gradient(135deg, #1a1a2e, #0f3460)' }}>
               Update
             </Button>
           </DialogActions>

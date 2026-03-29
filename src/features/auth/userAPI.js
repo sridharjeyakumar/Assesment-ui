@@ -5,6 +5,11 @@ export const getUsersAPI = async () => {
   return response.data
 }
 
+export const getManagersAPI = async () => {
+  const response = await API.get('/users/managers')
+  return response.data
+}
+
 export const createUserAPI = async (data) => {
   const response = await API.post('/users', data)
   return response.data
