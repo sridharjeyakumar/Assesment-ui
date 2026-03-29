@@ -2,7 +2,8 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Box, Drawer, List, ListItem, ListItemButton,
-  ListItemIcon, ListItemText, Typography, Divider, Button, Chip
+  ListItemIcon, ListItemText, Typography, Divider,
+  Button, Chip, Paper
 } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
@@ -31,7 +32,15 @@ const Sidebar = () => {
     { text: 'Users', icon: <PeopleIcon />, path: '/users', roles: ['admin'] },
   ]
 
-  const filteredMenu = menuItems.filter(item => item.roles.includes(user?.role))
+  const filteredMenu = menuItems.filter(item =>
+    item.roles.includes(user?.role)
+  )
+
+  const roleColor = {
+    admin: '#e63946',
+    manager: '#457b9d',
+    viewer: '#2d6a4f',
+  }
 
   return (
     <Drawer
@@ -68,7 +77,7 @@ const Sidebar = () => {
           size="small"
           sx={{
             mt: 0.5,
-            bgcolor: user?.role === 'admin' ? '#e63946' : user?.role === 'manager' ? '#457b9d' : '#2d6a4f',
+            bgcolor: roleColor[user?.role],
             color: 'white',
             fontSize: '10px'
           }}
@@ -93,7 +102,10 @@ const Sidebar = () => {
                 '&:hover': { bgcolor: '#16213e' },
               }}
             >
-              <ListItemIcon sx={{ color: location.pathname === item.path ? '#e63946' : 'grey.400', minWidth: 40 }}>
+              <ListItemIcon sx={{
+                color: location.pathname === item.path ? '#e63946' : 'grey.400',
+                minWidth: 40
+              }}>
                 {item.icon}
               </ListItemIcon>
               <ListItemText
@@ -109,6 +121,28 @@ const Sidebar = () => {
       </List>
 
       <Box sx={{ mt: 'auto', p: 2 }}>
+        <Paper sx={{ p: 1.5, mb: 2, bgcolor: '#16213e', borderRadius: 1 }}>
+          <Typography variant="caption" color="grey.400">
+            Permissions:
+          </Typography>
+          <br />
+          {user?.role === 'admin' && (
+            <Typography variant="caption" color="grey.300">
+              ✅ Full Access
+            </Typography>
+          )}
+          {user?.role === 'manager' && (
+            <Typography variant="caption" color="grey.300">
+              ✅ Create & Edit Workflows
+            </Typography>
+          )}
+          {user?.role === 'viewer' && (
+            <Typography variant="caption" color="grey.300">
+              👁 View Only
+            </Typography>
+          )}
+        </Paper>
+
         <Button
           fullWidth
           startIcon={<LogoutIcon />}
