@@ -3,13 +3,14 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
   Box, Drawer, List, ListItem, ListItemButton,
   ListItemIcon, ListItemText, Typography, Divider,
-  Button, Chip, Paper
+  Button, Chip, Paper, Avatar
 } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import AccountTreeIcon from '@mui/icons-material/AccountTree'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import PeopleIcon from '@mui/icons-material/People'
 import LogoutIcon from '@mui/icons-material/Logout'
+import ShieldIcon from '@mui/icons-material/Shield'
 import { logout } from '../../features/auth/authSlice'
 
 const DRAWER_WIDTH = 240
@@ -42,6 +43,13 @@ const Sidebar = () => {
     viewer: '#2d6a4f',
   }
 
+  const getInitials = (name) => {
+    if (!name) return '?'
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+  }
+
+  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
+
   return (
     <Drawer
       variant="permanent"
@@ -53,101 +61,163 @@ const Sidebar = () => {
           boxSizing: 'border-box',
           bgcolor: '#1a1a2e',
           color: 'white',
+          borderRight: 'none',
+          boxShadow: '4px 0 24px rgba(0,0,0,0.3)',
         },
       }}
     >
-      <Box sx={{ p: 2, mt: 1 }}>
-        <Typography variant="h6" fontWeight={700} color="white">
-          WorkFlow Pro
-        </Typography>
-        <Typography variant="caption" color="grey.400">
-          {tenant?.name}
-        </Typography>
+      {/* Logo / Brand */}
+      <Box sx={{
+        p: 2.5,
+        background: 'linear-gradient(135deg, #16213e 0%, #0f3460 100%)',
+        borderBottom: '1px solid rgba(255,255,255,0.08)',
+      }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Box sx={{
+            width: 36, height: 36, borderRadius: '10px',
+            background: 'linear-gradient(135deg, #e63946, #c1121f)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(230,57,70,0.4)',
+          }}>
+            <AccountTreeIcon sx={{ fontSize: 18, color: 'white' }} />
+          </Box>
+          <Box>
+            <Typography variant="subtitle1" fontWeight={700} color="white" lineHeight={1.2}>
+              WorkFlow Pro
+            </Typography>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px' }}>
+              {tenant?.name}
+            </Typography>
+          </Box>
+        </Box>
       </Box>
 
-      <Divider sx={{ bgcolor: 'grey.700' }} />
-
-      <Box sx={{ p: 2 }}>
-        <Typography variant="caption" color="grey.400">
-          {user?.name}
-        </Typography>
-        <br />
-        <Chip
-          label={user?.role?.toUpperCase()}
-          size="small"
-          sx={{
-            mt: 0.5,
-            bgcolor: roleColor[user?.role],
-            color: 'white',
-            fontSize: '10px'
-          }}
-        />
-      </Box>
-
-      <Divider sx={{ bgcolor: 'grey.700' }} />
-
-      <List sx={{ mt: 1 }}>
-        {filteredMenu.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              onClick={() => navigate(item.path)}
-              selected={location.pathname === item.path}
-              sx={{
-                mx: 1,
-                borderRadius: 1,
-                '&.Mui-selected': {
-                  bgcolor: '#16213e',
-                  '&:hover': { bgcolor: '#16213e' },
-                },
-                '&:hover': { bgcolor: '#16213e' },
-              }}
-            >
-              <ListItemIcon sx={{
-                color: location.pathname === item.path ? '#e63946' : 'grey.400',
-                minWidth: 40
-              }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText
-                primary={item.text}
-                primaryTypographyProps={{
-                  fontSize: 14,
-                  color: location.pathname === item.path ? 'white' : 'grey.400'
-                }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-
-      <Box sx={{ mt: 'auto', p: 2 }}>
-        <Paper sx={{ p: 1.5, mb: 2, bgcolor: '#16213e', borderRadius: 1 }}>
-          <Typography variant="caption" color="grey.400">
-            Permissions:
+      {/* User Info */}
+      <Box sx={{ p: 2, display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Avatar sx={{
+          width: 38, height: 38, fontSize: '14px', fontWeight: 700,
+          bgcolor: roleColor[user?.role] || '#555',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+        }}>
+          {getInitials(user?.name)}
+        </Avatar>
+        <Box sx={{ overflow: 'hidden' }}>
+          <Typography variant="body2" color="white" fontWeight={600} noWrap>
+            {user?.name}
           </Typography>
-          <br />
+          <Chip
+            label={user?.role?.toUpperCase()}
+            size="small"
+            sx={{
+              height: 18, fontSize: '9px', fontWeight: 700,
+              bgcolor: roleColor[user?.role],
+              color: 'white',
+              borderRadius: '4px',
+            }}
+          />
+        </Box>
+      </Box>
+
+      <Divider sx={{ borderColor: 'rgba(255,255,255,0.08)', mx: 2 }} />
+
+      {/* Navigation */}
+      <Box sx={{ px: 1.5, py: 1 }}>
+        <Typography variant="caption" sx={{
+          color: 'rgba(255,255,255,0.35)', fontSize: '10px', fontWeight: 700,
+          letterSpacing: '0.08em', px: 1.5, display: 'block', mb: 0.5,
+        }}>
+          NAVIGATION
+        </Typography>
+        <List disablePadding>
+          {filteredMenu.map((item) => {
+            const active = isActive(item.path)
+            return (
+              <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
+                <ListItemButton
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    borderRadius: '10px',
+                    py: 1,
+                    pl: 1.5,
+                    position: 'relative',
+                    bgcolor: active ? 'rgba(230,57,70,0.15)' : 'transparent',
+                    '&:hover': { bgcolor: active ? 'rgba(230,57,70,0.2)' : 'rgba(255,255,255,0.06)' },
+                    '&::before': active ? {
+                      content: '""',
+                      position: 'absolute',
+                      left: 0, top: '25%', bottom: '25%',
+                      width: 3, borderRadius: '0 3px 3px 0',
+                      bgcolor: '#e63946',
+                    } : {},
+                  }}
+                >
+                  <ListItemIcon sx={{
+                    color: active ? '#e63946' : 'rgba(255,255,255,0.45)',
+                    minWidth: 36,
+                  }}>
+                    {item.icon}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={item.text}
+                    slotProps={{
+                      primary: {
+                        fontSize: 14,
+                        fontWeight: active ? 600 : 400,
+                        color: active ? 'white' : 'rgba(255,255,255,0.6)',
+                      }
+                    }}
+                  />
+                </ListItemButton>
+              </ListItem>
+            )
+          })}
+        </List>
+      </Box>
+
+      {/* Bottom: Permissions + Logout */}
+      <Box sx={{ mt: 'auto', p: 2 }}>
+        <Box sx={{
+          p: 1.5, mb: 2, borderRadius: '10px',
+          background: 'rgba(255,255,255,0.05)',
+          border: '1px solid rgba(255,255,255,0.08)',
+        }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <ShieldIcon sx={{ fontSize: 14, color: 'rgba(255,255,255,0.4)' }} />
+            <Typography variant="caption" color="rgba(255,255,255,0.4)" fontWeight={600} sx={{ fontSize: '10px', letterSpacing: '0.06em' }}>
+              PERMISSIONS
+            </Typography>
+          </Box>
           {user?.role === 'admin' && (
-            <Typography variant="caption" color="grey.300">
+            <Typography variant="caption" color="rgba(255,255,255,0.7)">
               ✅ Full Access
             </Typography>
           )}
           {user?.role === 'manager' && (
-            <Typography variant="caption" color="grey.300">
+            <Typography variant="caption" color="rgba(255,255,255,0.7)">
               ✅ Create & Edit Workflows
             </Typography>
           )}
           {user?.role === 'viewer' && (
-            <Typography variant="caption" color="grey.300">
+            <Typography variant="caption" color="rgba(255,255,255,0.7)">
               👁 View Only
             </Typography>
           )}
-        </Paper>
+        </Box>
 
         <Button
           fullWidth
           startIcon={<LogoutIcon />}
           onClick={handleLogout}
-          sx={{ color: 'grey.400', justifyContent: 'flex-start' }}
+          sx={{
+            color: 'rgba(255,255,255,0.5)',
+            justifyContent: 'flex-start',
+            borderRadius: '10px',
+            py: 1,
+            '&:hover': {
+              bgcolor: 'rgba(230,57,70,0.1)',
+              color: '#e63946',
+            },
+          }}
         >
           Logout
         </Button>
