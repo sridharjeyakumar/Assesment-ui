@@ -30,7 +30,7 @@ const Sidebar = () => {
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard', roles: ['admin', 'manager', 'viewer'] },
     { text: 'Workflows', icon: <AccountTreeIcon />, path: '/workflows', roles: ['admin', 'manager', 'viewer'] },
     { text: 'Analytics', icon: <BarChartIcon />, path: '/analytics', roles: ['admin', 'manager', 'viewer'] },
-    { text: 'Users', icon: <PeopleIcon />, path: '/users', roles: ['admin'] },
+    { text: 'Users', icon: <PeopleIcon />, path: '/users', roles: ['admin', 'manager'] },
   ]
 
   const filteredMenu = menuItems.filter(item =>
