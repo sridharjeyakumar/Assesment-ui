@@ -156,12 +156,20 @@ const Users = () => {
         ) : (
           <Paper elevation={0} sx={{ borderRadius: 3, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <TableContainer>
-              <Table>
+              <Table sx={{ tableLayout: 'fixed', minWidth: 700 }}>
                 <TableHead>
                   <TableRow sx={{ background: 'linear-gradient(135deg, #1a1a2e, #0f3460)' }}>
-                    {['Name', 'Email', 'Role', 'Manager', 'Status', 'Created', ...(isAdmin ? ['Actions'] : [])].map((h) => (
-                      <TableCell key={h} sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700, borderBottom: 'none', py: 1.5 }}>
-                        {h}
+                    {[
+                      { label: 'Name', width: '20%' },
+                      { label: 'Email', width: '22%' },
+                      { label: 'Role', width: '10%' },
+                      { label: 'Manager', width: '16%' },
+                      { label: 'Status', width: '10%' },
+                      { label: 'Created', width: '12%' },
+                      ...(isAdmin ? [{ label: 'Actions', width: '10%' }] : []),
+                    ].map(({ label, width }) => (
+                      <TableCell key={label} sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 700, borderBottom: 'none', py: 1.5, px: 2, width }}>
+                        {label}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -200,24 +208,24 @@ const Users = () => {
                           '&:last-child td': { borderBottom: 'none' },
                         }}
                       >
-                        <TableCell>
+                        <TableCell sx={{ py: 1.5, px: 2 }}>
                           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                             <Avatar sx={{
                               width: 36, height: 36, fontSize: '13px', fontWeight: 700,
                               bgcolor: roleAvatarColors[u.role] || '#555',
-                              borderRadius: '10px',
+                              borderRadius: '10px', flexShrink: 0,
                             }}>
                               {getInitials(u.name)}
                             </Avatar>
-                            <Typography fontWeight={600} color="#0f172a" fontSize={14}>
+                            <Typography fontWeight={600} color="#0f172a" fontSize={14} noWrap>
                               {u.name}
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell>
-                          <Typography variant="body2" color="text.secondary">{u.email}</Typography>
+                        <TableCell sx={{ py: 1.5, px: 2 }}>
+                          <Typography variant="body2" color="text.secondary" noWrap>{u.email}</Typography>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap' }}>
                           <Chip
                             label={u.role.toUpperCase()}
                             color={roleColors[u.role]}
@@ -225,7 +233,7 @@ const Users = () => {
                             sx={{ borderRadius: 1, fontWeight: 700, fontSize: '11px' }}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1.5, px: 2 }}>
                           {u.managerId ? (
                             <Chip
                               label={u.managerId.name}
@@ -238,7 +246,7 @@ const Users = () => {
                             <Typography variant="body2" color="text.disabled">—</Typography>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap' }}>
                           <Chip
                             label={u.isActive ? 'Active' : 'Inactive'}
                             color={u.isActive ? 'success' : 'default'}
@@ -247,13 +255,13 @@ const Users = () => {
                             sx={{ borderRadius: 1, fontWeight: 600 }}
                           />
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ py: 1.5, px: 2, whiteSpace: 'nowrap' }}>
                           <Typography variant="body2" color="text.secondary">
                             {new Date(u.createdAt).toLocaleDateString()}
                           </Typography>
                         </TableCell>
                         {isAdmin && (
-                          <TableCell>
+                          <TableCell sx={{ py: 1.5, px: 2 }}>
                             <Box sx={{ display: 'flex', gap: 0.5 }}>
                               <Tooltip title="Edit Role">
                                 <IconButton
